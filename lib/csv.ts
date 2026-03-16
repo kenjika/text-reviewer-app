@@ -34,7 +34,7 @@ export function parseItemsCsv(csvText: string): CsvItem[] {
     const content = (row.Content ?? "").trim();
 
     if (!id || !title || !content) {
-      throw new Error(`${index + 2}行目に空の値があります (ID, Title, Content は必須です)`);
+      throw new Error(`CSV ${index + 2}行目に空の値があります (ID, Title, Content は必須です)`);
     }
 
     return {

@@ -9,12 +9,23 @@ type ItemPayload = {
 
 const BATCH_SIZE = 500;
 
+class HttpError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "HttpError";
+  }
+}
+
 function getSupabaseAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
+    throw new HttpError(
+      500,
       "Supabaseの環境変数 (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) が設定されていません",
     );
   }
@@ -24,18 +35,18 @@ function getSupabaseAdminClient() {
 
 function validateItems(items: unknown): ItemPayload[] {
   if (!Array.isArray(items) || items.length === 0) {
-    throw new Error("保存するデータがありません");
+    throw new HttpError(400, "保存するデータがありません");
   }
 
   return items.map((item, index) => {
     if (!item || typeof item !== "object") {
-      throw new Error(`${index + 1}件目のデータ形式が不正です`);
+      throw new HttpError(400, `${index + 1}件目のデータ形式が不正です`);
     }
 
     const typedItem = item as Partial<ItemPayload>;
 
     if (!typedItem.id || !typedItem.title || !typedItem.content) {
-      throw new Error(`${index + 1}件目に必須項目の不足があります`);
+      throw new HttpError(400, `${index + 1}件目に必須項目の不足があります`);
     }
 
     return {
@@ -59,7 +70,7 @@ export async function POST(request: Request) {
         .upsert(batch, { onConflict: "id" });
 
       if (error) {
-        throw new Error(`Supabase保存エラー: ${error.message}`);
+        throw new HttpError(500, `Supabase保存エラー: ${error.message}`);
       }
     }
 
@@ -67,10 +78,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "保存処理中に不明なエラーが発生しました";
-    const status =
-      message.includes("不足") || message.includes("不正") || message.includes("ありません")
-        ? 400
-        : 500;
+    const status = error instanceof HttpError ? error.status : 500;
 
     return NextResponse.json({ error: message }, { status });
   }

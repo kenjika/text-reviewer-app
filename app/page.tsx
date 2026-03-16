@@ -44,9 +44,7 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as
-          | { error?: string }
-          | null;
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
         throw new Error(body?.error ?? "データ保存に失敗しました");
       }
 
