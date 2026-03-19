@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getSupabaseAdminClient, SupabaseConfigError } from "@/lib/supabase/admin";
 
+export const runtime = "nodejs";
+
 type ItemPayload = {
   id: string;
   title: string;
