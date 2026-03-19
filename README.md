@@ -27,13 +27,20 @@ cp .env.example .env.local
 
 ## Supabase 初期設定
 
-`items` テーブルが未作成の場合、以下を実行してください。
+`items` テーブルと `item_reviews` テーブルが未作成の場合、以下を実行してください。
 
 ```sql
 create table if not exists public.items (
   id text primary key,
   title text not null,
   content text not null
+);
+
+create table if not exists public.item_reviews (
+  item_id text primary key references public.items(id) on delete cascade,
+  is_liked boolean not null default false,
+  memo text not null default '',
+  reviewed_at timestamptz
 );
 ```
 
@@ -57,6 +64,8 @@ npm run start
 2. ブラウザで `/` を開く
 3. ヘッダーが `ID,Title,Content` のCSVを選択
 4. 「データを保存する」を押して、Toastの成功/失敗表示を確認
+5. `/review` を開き、カードで「いいね」「メモ入力」「ネクスト」を操作
+6. 遷移後も入力内容が保持されることを確認
 
 ## Node.js実行の検証手順
 

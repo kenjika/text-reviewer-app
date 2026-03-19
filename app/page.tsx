@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -67,6 +68,12 @@ export default function Home() {
       <p className="mt-2 text-sm text-gray-600">
         ヘッダーが <code>ID,Title,Content</code> のCSVを選択して保存してください。
       </p>
+      <Link
+        href="/review"
+        className="mt-3 w-fit text-sm text-primary underline underline-offset-4"
+      >
+        レビュー画面へ移動
+      </Link>
 
       <div className="mt-8 w-full max-w-2xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <label htmlFor="csv-file" className="mb-2 block text-sm font-medium text-gray-700">
