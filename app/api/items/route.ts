@@ -1,5 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+
+import { getSupabaseAdminClient, SupabaseConfigError } from "@/lib/supabase/admin";
 
 type ItemPayload = {
   id: string;
@@ -17,20 +18,6 @@ class HttpError extends Error {
     super(message);
     this.name = "HttpError";
   }
-}
-
-function getSupabaseAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new HttpError(
-      500,
-      "Supabaseの環境変数 (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) が設定されていません",
-    );
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey);
 }
 
 function validateItems(items: unknown): ItemPayload[] {
@@ -76,6 +63,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ inserted: items.length });
   } catch (error) {
+    if (error instanceof SupabaseConfigError) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
     const message =
       error instanceof Error ? error.message : "保存処理中に不明なエラーが発生しました";
     const status = error instanceof HttpError ? error.status : 500;
