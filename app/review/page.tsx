@@ -22,6 +22,7 @@ export default function ReviewPage() {
   const [likedDraft, setLikedDraft] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const currentItem = items[currentIndex] ?? null;
   const progressText = useMemo(() => {
@@ -117,6 +118,43 @@ export default function ReviewPage() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      if (currentItem) {
+        await saveCurrent();
+      }
+
+      setIsExporting(true);
+      const response = await fetch("/api/reviews/export");
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "CSVエクスポートに失敗しました");
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const matched = contentDisposition?.match(/filename="(.+)"/);
+      const filename = matched?.[1] ?? "review-results.csv";
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      toast.success("CSVをダウンロードしました");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "CSVエクスポート中にエラーが発生しました",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
@@ -169,14 +207,24 @@ export default function ReviewPage() {
           type="button"
           variant={likedDraft ? "default" : "outline"}
           onClick={() => setLikedDraft((prev) => !prev)}
-          disabled={isSaving}
+          disabled={isSaving || isExporting}
         >
           {likedDraft ? "いいね済み" : "いいね"}
         </Button>
-        <Button type="button" onClick={handleNext} disabled={isSaving}>
+        <Button type="button" onClick={handleNext} disabled={isSaving || isExporting}>
           {isSaving ? "保存中..." : "ネクスト"}
         </Button>
       </div>
+
+      <Button
+        type="button"
+        variant="secondary"
+        className="mt-3"
+        onClick={handleExport}
+        disabled={isSaving || isExporting}
+      >
+        {isExporting ? "エクスポート中..." : "CSVをダウンロード"}
+      </Button>
 
       <Link href="/" className="mt-4 text-center text-sm text-primary underline underline-offset-4">
         CSVアップロード画面へ戻る
